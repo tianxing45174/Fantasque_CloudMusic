@@ -3,7 +3,14 @@
     <div class="inputbtn">
       <div class="inputcover">
         <i class="inputicon"></i>
-        <input type="search" name="search" @input="change" class="input" v-model="value" @keyup.enter="submit" />
+        <input
+          type="search"
+          name="search"
+          @input="change"
+          class="input"
+          v-model="value"
+          @keyup.enter="submit"
+        />
         <div class="holder" v-if="value == ''">搜索歌曲、歌手、专辑</div>
         <div class="close" @click="clearvalue" v-if="!(value == '')">
           <!-- <div class="close"> -->
@@ -11,13 +18,18 @@
         </div>
       </div>
     </div>
-    <component :is="type" :musicList="searchSongsList" @searchFromHotlist="hotListSearch($event)"></component>
+    <component
+      :is="type"
+      :musicList="searchSongsList"
+      @searchFromHotlist="hotListSearch($event)"
+      @playToRouter="$emit('playToApp', $event)"
+    ></component>
   </div>
 </template>
 
 <script>
-import SearchDefault from '@/components/searchDefault.vue';
-import MusicList from '@/components/musicList.vue';
+import SearchDefault from "@/components/searchDefault.vue";
+import MusicList from "@/components/musicList.vue";
 export default {
   name: "search",
   components: { SearchDefault, MusicList },
@@ -27,19 +39,18 @@ export default {
       value: "",
       type: "SearchDefault",
       searchSongsList: [],
-      historyList: []
     };
   },
 
-  mounted() { },
+  mounted() {},
   watch: {
     value: {
       handler(newValue, oldValue) {
-        if (newValue == '') {
-          this.type = "SearchDefault"
+        if (newValue == "") {
+          this.type = "SearchDefault";
         }
-      }
-    }
+      },
+    },
   },
 
   methods: {
@@ -48,11 +59,12 @@ export default {
     },
     hotListSearch(value) {
       // console.log('e',value);
-      this.value = value
-      this.submit()
+      this.value = value;
+      this.submit();
     },
     submit(e) {
-      this.$axios.get("/cloudsearch?keywords=" + this.value)
+      this.$axios
+        .get("/cloudsearch?keywords=" + this.value)
         .then((res) => {
           // console.log(res.data.result.songs);
           this.searchSongsList = res.data.result.songs.map((item, index) => {
@@ -63,7 +75,7 @@ export default {
               album: item.al,
             };
             return item;
-          })
+          });
           // console.log('searchSongsList',this.searchSongsList);
         })
         .catch(function (error) {
@@ -71,26 +83,38 @@ export default {
           console.log(error);
           // alert("请求失败")
         });
-      let searchHistoryList
-      if ((searchHistoryList = window.localStorage.getItem('searchHostory')) == null) {
-        window.localStorage.setItem('searchHostory', [this.value])
+
+      var searchHistoryList;
+      var index;
+      //搜索历史为空
+      if (
+        (searchHistoryList = window.localStorage.getItem("searchHostory")) ==
+        null
+      ) {
+        window.localStorage.setItem("searchHostory", [this.value]);
       } else {
-        window.localStorage.setItem('searchHostory', [this.value, searchHistoryList])
-      }
-      this.historyList = window.localStorage.getItem('searchHostory').split(',')
-      this.historyList.filter((item) =>{
-        for (let i = 0; i < this.historyList.length; i++) {
-          if (item==this.historyList[i]) {
-            return true
+        searchHistoryList = searchHistoryList.split(",");
+        //判断是否曾经搜索过此歌
+        if ((index = searchHistoryList.indexOf(this.value)) == -1) {
+          //搜索历史中没有此歌
+          if (searchHistoryList.length==6) {
+            //历史超过6删除最早的历史
+            searchHistoryList.pop()
           }
+          searchHistoryList.unshift(this.value);
+        } else {
+          //如果曾经搜索过此歌
+          searchHistoryList.splice(index, 1);
+          searchHistoryList.unshift(this.value);
         }
-      })
-      console.log(this.historyList);
-      this.type = "MusicList"
+        window.localStorage.setItem("searchHostory", searchHistoryList);
+      }
+      console.log(searchHistoryList);
+      this.type = "MusicList";
     },
     clearvalue() {
       this.value = "";
-      this.type = "SearchDefault"
+      this.type = "SearchDefault";
     },
   },
 };

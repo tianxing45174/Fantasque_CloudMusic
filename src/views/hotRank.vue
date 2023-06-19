@@ -49,55 +49,7 @@ export default {
   },
 
   created() {
-    var hotlistid = 0;
-    //获取热歌榜id
-    this.$axios
-      .get("/toplist")
-      .then((res) => {
-        let hotlist = res.data.list.filter(({ name }) => name == "热歌榜")[0];
-        let date = new Date(hotlist.trackUpdateTime);
-        // console.log(hotlist);
-        // console.log(new Date(hotlist.trackNumberUpdateTime));
-        // console.log(new Date(hotlist.trackUpdateTime));
-        // console.log(new Date(hotlist.updateTime));
-        let month_;
-        let day_;
-        hotlistid = hotlist.id;
-        if ((month_ = date.getMonth() + 1) < 10) {
-          month_ = "0" + month_;
-        }
-        if ((day_ = date.getDate()) < 10) {
-          day_ = "0" + day_;
-        }
-        this.updateTime = month_ + "月" + day_ + "日";
-        // console.log(this.updateTime);
-      })
-      .then((res) => {
-        //获取热歌榜歌单
-        this.$axios.get("/playlist/detail?id=" + hotlistid )
-        .then((res) => {
-          this.hotSongsList = res.data.playlist.tracks.map((item, index) => {
-            item.song = {
-              alias: item.alia,
-              privilege: res.data.privileges[index],
-              artists: item.ar,
-              album: item.al,
-            };
-            return item;
-          });
-          // console.log(res.data.playlist.tracks);
-          // console.log(this.hotSongsList);
-        })
-        .catch(function (error) {
-        // 请求失败处理
-        console.log(error);
-        // alert("请求失败")
-      });
-      })
-      .catch(function (error) {
-        // 请求失败处理
-        console.log(error);
-      });
+    this.getHotListDetail();
   },
 
   mounted() {
@@ -180,6 +132,54 @@ export default {
     // getWindowHeight() {
     //     return document.compatMode == "CSS1Compat" ? document.documentElement.clientHeight : document.body.clientHeight
     // }
+    getHotListDetail() {
+      //获取热歌榜id
+      this.$axios
+        .get("/toplist")
+        .then((res) => {
+          let hotlist = res.data.list.filter(({ name }) => name == "热歌榜")[0];
+          let date = new Date(hotlist.trackUpdateTime);
+          let month_;
+          let day_;
+          if ((month_ = date.getMonth() + 1) < 10) {
+            month_ = "0" + month_;
+          }
+          if ((day_ = date.getDate()) < 10) {
+            day_ = "0" + day_;
+          }
+          this.updateTime = month_ + "月" + day_ + "日";
+          var hotlistid = hotlist.id;
+          // console.log('hotlist.id',hotlist.id);
+          // console.log(this.updateTime);
+          //获取热歌榜歌单
+          this.$axios
+            .get("/playlist/detail?id=" + hotlistid)
+            .then((res) => {
+              this.hotSongsList = res.data.playlist.tracks.map(
+                (item, index) => {
+                  item.song = {
+                    alias: item.alia,
+                    privilege: res.data.privileges[index],
+                    artists: item.ar,
+                    album: item.al,
+                  };
+                  return item;
+                }
+              );
+              // console.log(res.data.playlist.tracks);
+              // console.log(this.hotSongsList);
+            })
+            .catch(function (error) {
+              // 请求失败处理
+              console.log(error);
+              // alert("请求失败")
+            });
+        })
+        .catch(function (error) {
+          // 请求失败处理
+          console.log(error);
+        });
+    },
   },
 };
 </script>
