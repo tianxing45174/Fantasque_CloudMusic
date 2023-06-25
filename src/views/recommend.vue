@@ -10,7 +10,6 @@
     <title-border>最新音乐</title-border>
     <music-list
       :musicList="newSongsList"
-      @playToRouter="$emit('playToApp', $event)"
     ></music-list>
   </div>
 </template>

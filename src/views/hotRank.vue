@@ -12,7 +12,6 @@
       <music-list
         :musicList="showList"
         :showNum="true"
-        @playToRouter="$emit('playToApp', $event)"
       ></music-list>
     </div>
     <div

@@ -6,14 +6,13 @@
         <input
           type="search"
           name="search"
-          @input="change"
+          @input="change()"
           class="input"
           v-model="value"
           @keyup.enter="submit"
         />
         <div class="holder" v-if="value == ''">搜索歌曲、歌手、专辑</div>
         <div class="close" @click="clearvalue" v-if="!(value == '')">
-          <!-- <div class="close"> -->
           <i class="empty"></i>
         </div>
       </div>
@@ -21,8 +20,8 @@
     <component
       :is="type"
       :musicList="searchSongsList"
-      @searchFromHotlist="hotListSearch($event)"
-      @playToRouter="$emit('playToApp', $event)"
+      :recSearchList="recSearchList"
+      @searchFromComponent="hotListSearch($event)"
     ></component>
   </div>
 </template>
@@ -30,15 +29,17 @@
 <script>
 import SearchDefault from "@/components/searchDefault.vue";
 import MusicList from "@/components/musicList.vue";
+import RecSearch from "@/components/recSearch.vue";
 export default {
   name: "search",
-  components: { SearchDefault, MusicList },
+  components: { SearchDefault, MusicList, RecSearch },
 
   data() {
     return {
       value: "",
       type: "SearchDefault",
       searchSongsList: [],
+      recSearchList: []
     };
   },
 
@@ -55,14 +56,28 @@ export default {
 
   methods: {
     change(e) {
-      // console.log("value",this.value);
+      if (this.value=='') {
+        return
+      }
+      this.$axios.get(`/search/suggest?keywords=${this.value}&type=mobile`)
+      .then((res)=>{
+        // console.log('allMatch',res.data.result.allMatch);
+        if (res.data.result.allMatch != undefined) {
+          this.recSearchList = res.data.result.allMatch
+        }
+      })
+      .catch((err)=>{
+        console.log(err);
+      })
+      this.type = "RecSearch"
     },
+
     hotListSearch(value) {
-      // console.log('e',value);
       this.value = value;
       this.submit();
     },
     submit(e) {
+      this.searchSongsList = []
       this.$axios
         .get("/cloudsearch?keywords=" + this.value)
         .then((res) => {
@@ -97,9 +112,9 @@ export default {
         //判断是否曾经搜索过此歌
         if ((index = searchHistoryList.indexOf(this.value)) == -1) {
           //搜索历史中没有此歌
-          if (searchHistoryList.length==6) {
+          if (searchHistoryList.length == 6) {
             //历史超过6删除最早的历史
-            searchHistoryList.pop()
+            searchHistoryList.pop();
           }
           searchHistoryList.unshift(this.value);
         } else {
@@ -109,7 +124,7 @@ export default {
         }
         window.localStorage.setItem("searchHostory", searchHistoryList);
       }
-      console.log(searchHistoryList);
+      // console.log(searchHistoryList);
       this.type = "MusicList";
     },
     clearvalue() {

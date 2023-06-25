@@ -36,6 +36,9 @@
         <div class="play" @click="play(item)"></div>
       </div>
     </div>
+    <div ref="loading" class="loading" v-if="musicList.length == 0 && showNum == false">
+      加载中
+    </div>
   </div>
 </template>
 
@@ -58,11 +61,18 @@ export default {
     };
   },
 
-  mounted() {},
+  mounted() {
+  },
+  computed: {
+    //借助mapState生成计算属性，从state中读取数据。（数组写法）
+    //...mapState(['sum','school','subject']),
+    //借助mapGetters生成计算属性，从getters中读取数据。（数组写法）
+    //...mapGetters(['bigSum'])
+  },
 
   methods: {
-    play(item) {
-      this.$emit("playToRouter", item);
+    play(music) {
+      this.$store.commit("ADDPLAYLIST",music)
     },
   },
 };
@@ -70,6 +80,13 @@ export default {
 
 <style lang="scss" scoped>
 .music-list {
+  .loading {
+    text-align: center;
+    color: #999;
+    padding-top: 10px;
+    padding-bottom: 5px;
+  }
+
   .song {
     display: flex;
     padding-left: 10px;
@@ -127,8 +144,7 @@ export default {
             width: 12px;
             height: 8px;
             margin-right: 4px;
-            background: url(https://s3.music.126.net/mobile-new/img/index_icon_2x.png?5207a28c3767992ca4bb6d4887c74880=)
-              no-repeat;
+            background: url(https://s3.music.126.net/mobile-new/img/index_icon_2x.png?5207a28c3767992ca4bb6d4887c74880=) no-repeat;
             background-size: 166px 97px;
           }
         }
@@ -145,8 +161,7 @@ export default {
         display: inline-block;
         width: 22px;
         height: 22px;
-        background: url(https://s3.music.126.net/mobile-new/img/index_icon_2x.png?5207a28c3767992ca4bb6d4887c74880=)
-          no-repeat;
+        background: url(https://s3.music.126.net/mobile-new/img/index_icon_2x.png?5207a28c3767992ca4bb6d4887c74880=) no-repeat;
         background-position: -24px 0;
         background-size: 166px 97px;
       }

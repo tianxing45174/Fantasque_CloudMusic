@@ -29,7 +29,7 @@ export default {
   cursor: pointer;
   top: 0;
   left: 0;
-  z-index: 99;
+  z-index: 50;
   box-sizing: border-box;
   width: 100%;
   height: 40px;

@@ -4,7 +4,7 @@
       <div class="title">热门搜索</div>
       <div class="list">
         <li class="item" v-for="(item, i) in hotsList" :key="i">
-          <span @click="hotlistsearch(item.first)">{{ item.first }}</span>
+          <span @click="clickSearch(item.first)">{{ item.first }}</span>
         </li>
       </div>
     </div>
@@ -13,7 +13,7 @@
         <li class="item">
           <i class="history-icon"></i>
           <div class="history-r">
-            <span class="first" @click="hotlistsearch(item)">{{ item }}</span>
+            <span class="first" @click="clickSearch(item)">{{ item }}</span>
             <span class="close" @click.stop="deleteHistoey(item)">X</span>
           </div>
         </li>
@@ -49,8 +49,8 @@ export default {
         this.hotsList = res.data.result.hots;
       });
     },
-    hotlistsearch(value) {
-      this.$emit("searchFromHotlist", value);
+    clickSearch(value) {
+      this.$emit("searchFromComponent", value);
     },
     deleteHistoey(item) {
       console.log(this.historyList.length);
