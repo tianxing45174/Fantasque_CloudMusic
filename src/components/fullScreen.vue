@@ -68,25 +68,41 @@
       </div>
       <div class="musicBar">
         <span class="nowTime">
-          {{ nowTime }}
+          {{ music.playTime }}
         </span>
         <span class="timeBar">
           <van-slider
-            v-model="musicCurrentTime"
-            :max="$store.state.musicPlay._refs.AppAudio.duration"
+            v-model="music.playTimeBySecond"
+            :max="$store.state.musicPlay.music.playTotalTimeBySecond"
             button-size="6px"
+            step="0.01"
             @change="changeCurrentTime"
           />
         </span>
         <span class="totalTime">
-          {{ totalTime }}
+          {{ music.playTotalTime }}
         </span>
       </div>
       <div class="boxFooter">
         <div @click.stop="changePlayModel">
-          <option value="" style="color: #fff">顺序</option>
-          <!-- <option value="">随机</option>
-          <option value="">单曲循环</option> -->
+          <van-icon
+            v-if="music.model == 1"
+            size="30px"
+            color="#fff"
+            name="exchange"
+          />
+          <van-icon
+            v-else-if="music.model == 2"
+            size="30px"
+            color="#fff"
+            name="revoke"
+          />
+          <van-icon
+            v-else-if="music.model == 3"
+            size="30px"
+            color="#fff"
+            name="replay"
+          />
         </div>
         <div class="togglePlay">
           <van-icon
@@ -96,7 +112,7 @@
             @click.stop="playPre"
           />
           <van-icon
-            v-if="$store.state.musicPlay.music.playStatus"
+            v-if="music.playStatus"
             size="50px"
             color="#fff"
             name="play-circle-o"
@@ -124,15 +140,18 @@
         />
       </div>
     </div>
-    <div @click.stop="" class="PlayList" v-show="playListStatus">
-      <play-list class="List"></play-list>
-    </div>
+    <transition name="PlayListAnima">
+      <div @click.stop="" class="PlayList" v-show="playListStatus">
+        <play-list class="List"></play-list>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script>
 import { Icon } from "vant";
 import PlayList from "./playList.vue";
+import {mapState} from "vuex";
 export default {
   name: "fullScreen",
   components: { Icon, PlayList },
@@ -164,11 +183,9 @@ export default {
       this.$store.state.musicPlay._refs.AppAudio.currentTime;
     //保存播放音量
     this.soundValue = this.$store.state.musicPlay._refs.AppAudio.volume;
-    this.countTotalTime();
   },
-  updated() {
-    this.countTotalTime()
-    // this.getLyricData()
+  beforeUpdate() {
+    // this.countTotalTime();load()
   },
   methods: {
     showPlay() {
@@ -214,7 +231,7 @@ export default {
     },
     //拖动进度条
     changeCurrentTime(musicCurrentTime) {
-      this.musicCurrentTime = musicCurrentTime;
+      this.$store.state.musicPlay.music.playTime = musicCurrentTime;
       this.$store.state.musicPlay._refs.AppAudio.currentTime = musicCurrentTime;
     },
     //修改音量
@@ -237,24 +254,6 @@ export default {
     showPlayList() {
       this.playListStatus = !this.playListStatus;
     },
-    //计算总时间
-    countTotalTime() {
-      var min = Math.trunc(
-        this.$store.state.musicPlay._refs.AppAudio.duration / 60
-      );
-      var second = Math.trunc(
-        this.$store.state.musicPlay._refs.AppAudio.duration % 60
-      );
-      if (min < 10) {
-        min = "0" + min;
-      }
-      if (second < 10) {
-        second = "0" + second;
-      }
-      this.totalTime = min + ":" + second;
-      console.log("countTotalTime",this.totalTime);
-    },
-    // TODO
     playPre() {
       var _thisPlay = this.$store.state.musicPlay.music.thisPlay;
       var _PlayList = this.$store.state.musicPlay.music.playList;
@@ -270,10 +269,9 @@ export default {
           music: _PlayList[_thisPlay.index - 1],
         };
       }
-      // console.log("_thisPlay","_thisPlay");
-      // console.log("_thisPlay",this.$store.state.musicPlay.music.thisPlay);
-      // console.log("_PlayList",_PlayList);
-      // console.log("_PlayList",this.$store.state.musicPlay.music.playList);
+      this.$store.state.musicPlay.music.playStatus = false;
+      this.$store.state.musicPlay._refs.AppAudio.load()
+      this.getLyricData();
     },
     playNext() {
       var _thisPlay = this.$store.state.musicPlay.music.thisPlay;
@@ -290,44 +288,22 @@ export default {
           music: _PlayList[_thisPlay.index + 1],
         };
       }
+      this.$store.state.musicPlay.music.playStatus = false;
+      this.$store.state.musicPlay._refs.AppAudio.load()
+      this.getLyricData();
     },
-    changePlayModel() {},
+    // TODO
+    changePlayModel() {
+      if (this.$store.state.musicPlay.music.model == 3) {
+        this.$store.state.musicPlay.music.model = 1;
+      } else {
+        this.$store.state.musicPlay.music.model++;
+      }
+    },
   },
   computed: {
-    nowTime() {
-      var min = Math.trunc(
-        this.$store.state.musicPlay._refs.AppAudio.currentTime / 60
-      );
-      var second = Math.trunc(
-        this.$store.state.musicPlay._refs.AppAudio.currentTime % 60
-      );
-      min = "0" + min;
-      if (second < 10) {
-        second = "0" + second;
-      }
-      console.log("min", min);
-      console.log("second", second);
-
-      return min + ":" + second;
-    },
+    ...mapState("musicPlay", ["music"]),
   },
-  // watch: {
-  //   musicCurrentTime(newValue, oldValue) {
-  //     var min = Math.trunc(
-  //       this.$store.state.musicPlay._refs.AppAudio.currentTime / 60
-  //     );
-  //     var second = Math.trunc(
-  //       this.$store.state.musicPlay._refs.AppAudio.currentTime % 60
-  //     );
-  //     min = "0" + min;
-  //     if (second < 10) {
-  //       second = "0" + second;
-  //     }
-  //     console.log("min", min);
-  //     console.log("second", second);
-  //     this.nowTime = min + ":" + second;
-  //   },
-  // },
 };
 </script>
 
@@ -344,6 +320,23 @@ export default {
   background-size: cover;
   background-repeat: no-repeat;
   z-index: 50;
+  /* 进入动画的第一帧 */
+  .PlayListAnima-enter,
+  .PlayListAnima-leave-to {
+    transform: translateY(100%);
+  }
+
+  /* 进入动画的过程 */
+  .PlayListAnima-enter-active,
+  .PlayListAnima-leave-active {
+    transition: all 0.3s ease-in;
+  }
+
+  /* 进入动画的第一帧 */
+  .PlayListAnima-enter-to,
+  .PlayListAnima-leave {
+    transform: translateY(0);
+  }
   &::before {
   }
   .Inner {
@@ -471,9 +464,9 @@ export default {
   }
   .PlayList {
     width: 100%;
-    height: 50%;
+    height: 100%;
     position: absolute;
-    top: 50%;
+    top: 35%;
     .List {
       border-radius: 20px;
       height: 98%;

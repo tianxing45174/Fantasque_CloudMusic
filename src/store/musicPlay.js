@@ -19,12 +19,16 @@ export default {
 			playBoxStatus: false,
 			//播放状态
 			playStatus: false,
-			//播放时间
-			playTime: 0,
 			//当前音量
 			soundValue: 0,
-			//当前播放dom元素
-			// AppAudio:{}
+			//当前播放时间 分:秒
+			playTime: 0,
+			//当前播放时间 秒
+			playTimeBySecond: 0,
+			//当前播放音乐总时间 分:秒
+			playTotalTime: "",
+			//当前播放音乐总时间 秒
+			playTotalTimeBySecond: "",
 		},
 		_refs: {}
 	},
@@ -47,16 +51,17 @@ export default {
 				//音乐
 				music
 			},
-			state.music.playBoxStatus = true
+				state.music.playBoxStatus = true
 			state.music.playList.unshift(music)
-			console.log("statemusic", state);
-			// console.log("thismusic",music);
+			console.log("statemusic", state.music);
 		}
 	},
 	//准备getters——用于将state中的数据进行加工 //类计算属性
 	// getters: {
 	// 	nowTime(state) {
-
+	// 		var MaxTime = state.music.playTotalTime
+	// 		console.log("getters", MaxTime);
+	// 		return MaxTime
 	// 	}
 	// }
 }

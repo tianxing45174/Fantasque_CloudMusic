@@ -32,6 +32,8 @@
           <audio
             class="audio"
             ref="AppAudio"
+            @canplay="canplaysong"
+            @timeupdate="updateCurrentTime"
             v-if="music.playBoxStatus"
             autoplay
             :src="`https://music.163.com/song/media/outer/url?id=${music.thisPlay.music.id}.mp3`"
@@ -45,8 +47,7 @@
         @showPlay="toggleFullScreen"
         :playmusic="music.thisPlay.music"
         v-if="isShowPlay"
-        ></full-screen>
-        <!-- :AppAudio="AppAudio" -->
+      ></full-screen>
     </transition>
   </div>
 </template>
@@ -60,21 +61,11 @@ export default {
   data() {
     return {
       isShowPlay: false,
-      AppAudio: {},
     };
   },
   mounted() {
-    // this.$watch(
-    //   () => this.$refs.AppAudio,
-    //   val => {
-    //     console.log("this.$refs.AppAudio",this.$refs.AppAudio);
-    //     this.$store.state.musicPlay.music.AppAudio = this.$refs.AppAudio
-    //   }
-    // )
   },
   updated() {
-    this.$store.state.musicPlay._refs = this.$refs
-    this.AppAudio = this.$refs.AppAudio
   },
   computed: {
     ...mapState("musicPlay", ["music"]),
@@ -87,26 +78,49 @@ export default {
     },
   },
   methods: {
-    // play(music) {
-    //   console.log("play", music);
-    // },
+    //播放器组件加载完成后触发
+    canplaysong() {
+      // console.log("canplaysong");
+      this.$store.state.musicPlay._refs = this.$refs;
+      var min = Math.trunc(
+        // this.$store.state.musicPlay._refs.AppAudio.duration / 60
+        this.$refs.AppAudio.duration / 60
+      );
+      var second = Math.trunc(
+        // this.$store.state.musicPlay._refs.AppAudio.duration % 60
+        this.$refs.AppAudio.duration % 60
+      );
+      if (min < 10) {
+        min = "0" + min;
+      }
+      if (second < 10) {
+        second = "0" + second;
+      }
+      this.$store.state.musicPlay.music.playTotalTime = min + ":" + second;
+      this.$store.state.musicPlay.music.playTotalTimeBySecond = Math.trunc(this.$refs.AppAudio.duration
+      );
+    },
+
+    //播放时间变化事件触发
+    updateCurrentTime(){
+      // console.log("updateCurrentTime",this.$refs.AppAudio.currentTime);
+      var min = Math.trunc(
+        this.$refs.AppAudio.currentTime / 60
+      );
+      var second = Math.trunc(
+        this.$refs.AppAudio.currentTime % 60
+      );
+      min = "0" + min;
+      if (second < 10) {
+        second = "0" + second;
+      }
+      this.$store.state.musicPlay.music.playTime = min + ":" + second;
+      this.$store.state.musicPlay.music.playTimeBySecond = 
+        this.$refs.AppAudio.currentTime
+    },
     toggleFullScreen() {
-      this.AppAudio = this.$refs.AppAudio
       this.isShowPlay = !this.isShowPlay;
     },
-  },
-  watch: {
-  //   $refs["AppAudio"]: {
-  //     deep:true,
-  //     handler(newV,oldV) {
-  //       this.$nextTick(() => {
-  //       console.log("this.AppAudio", this.AppAudio);
-  //       console.log("newValue", newV.currentTime);
-  //       console.log("oldValue", oldV.currentTime);
-  //       this.AppAudio.currentTime = newV.currentTime
-  //     });
-  //     }
-  //   }
   },
 };
 </script>
