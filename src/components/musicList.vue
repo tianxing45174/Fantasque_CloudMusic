@@ -43,6 +43,7 @@
 </template>
 
 <script>
+import {mapMutations} from 'vuex'
 export default {
   name: "musicList",
   props: {
@@ -64,16 +65,14 @@ export default {
   mounted() {
   },
   computed: {
-    //借助mapState生成计算属性，从state中读取数据。（数组写法）
-    //...mapState(['sum','school','subject']),
-    //借助mapGetters生成计算属性，从getters中读取数据。（数组写法）
-    //...mapGetters(['bigSum'])
   },
 
   methods: {
-    play(music) {
-      this.$store.commit("ADDPLAYLIST",music)
-    },
+    ...mapMutations('musicPlay',{play:'ADDPLAYLIST',}),
+    // play(music) {
+    //   // console.log('play(music)',music);
+    //   this.$store.commit("ADDPLAYLIST",music)
+    // },
   },
 };
 </script>

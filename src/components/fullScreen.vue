@@ -1,13 +1,21 @@
 <template>
   <div
     class="fullScreenBox"
-    :style="{ '--bgurl': `url(${playmusic.picUrl}?param=200y200)` }"
+    :style="{ '--bgurl': `url(${playmusic.song.album.picUrl}?param=200y200)` }"
+    @click="playListStatus = false"
   >
     <div class="Inner">
       <div class="fullScreenHeader">
         <!-- <div class="x" @click="showPlay">x</div> -->
-        <van-icon class="x" name="arrow-down" @click="showPlay" />
-        <div class="songName">{{ playmusic.name }}</div>
+        <van-icon class="x" name="arrow-down" @click.stop="showPlay" />
+        <div class="Name">
+          <div class="songName">{{ playmusic.name }}</div>
+          <div class="arName">
+            <span v-for="(item, index) in playmusic.ar" :key="index">
+              {{ item.name }}
+            </span>
+          </div>
+        </div>
         <!-- <div class="forward">分享</div> -->
         <svg
           t="1687655798202"
@@ -31,6 +39,19 @@
           ></path>
         </svg>
       </div>
+      <div class="soundVolume">
+        <van-icon class="icon" color="#fff" size="14px" name="volume" />
+        <van-slider
+          class="slider"
+          v-model="soundValue"
+          @change="soundVolumeChange"
+          step="0.01"
+          max="1"
+          button-size="8px"
+          active-color="#fff"
+          inactive-color="#999"
+        />
+      </div>
       <div class="boxBody">
         <ul class="bodyInner">
           <div ref="loading" class="loading" v-if="lyricList.length == 0">
@@ -39,37 +60,90 @@
           <li
             :class="index % 2 == 0 ? 'inactive' : 'active'"
             v-for="(item, index) in lyricList"
-            :key="item.time"
+            :key="index"
           >
             {{ item.lyric }}
           </li>
         </ul>
       </div>
+      <div class="musicBar">
+        <span class="nowTime">
+          {{ nowTime }}
+        </span>
+        <span class="timeBar">
+          <van-slider
+            v-model="musicCurrentTime"
+            :max="$store.state.musicPlay._refs.AppAudio.duration"
+            button-size="6px"
+            @change="changeCurrentTime"
+          />
+        </span>
+        <span class="totalTime">
+          {{ totalTime }}
+        </span>
+      </div>
       <div class="boxFooter">
-        <div @click="changePlayModel">
-          <option value="">顺序</option>
-          <option value="">随机</option>
-          <option value="">单曲循环</option>
+        <div @click.stop="changePlayModel">
+          <option value="" style="color: #fff">顺序</option>
+          <!-- <option value="">随机</option>
+          <option value="">单曲循环</option> -->
         </div>
         <div class="togglePlay">
-          <van-icon size="30px" color="#fff" name="arrow-left" @click="playPre" />
-          <van-icon size="50px" color="#fff" name="play-circle-o" @click="changePlayStatus"/>
-          <van-icon size="30px" color="#fff" name="arrow" @click="playNext" />
+          <van-icon
+            size="30px"
+            color="#fff"
+            name="arrow-left"
+            @click.stop="playPre"
+          />
+          <van-icon
+            v-if="$store.state.musicPlay.music.playStatus"
+            size="50px"
+            color="#fff"
+            name="play-circle-o"
+            @click.stop="changePlayStatus(true)"
+          />
+          <van-icon
+            v-else
+            size="50px"
+            color="#fff"
+            name="pause-circle-o"
+            @click.stop="changePlayStatus(false)"
+          />
+          <van-icon
+            size="30px"
+            color="#fff"
+            name="arrow"
+            @click.stop="playNext"
+          />
         </div>
-        <van-icon class="lists" size="30px" name="orders-o" @click="showPlayList"/>
+        <van-icon
+          class="lists"
+          size="30px"
+          name="orders-o"
+          @click.stop="showPlayList"
+        />
       </div>
+    </div>
+    <div @click.stop="" class="PlayList" v-show="playListStatus">
+      <play-list class="List"></play-list>
     </div>
   </div>
 </template>
 
 <script>
 import { Icon } from "vant";
+import PlayList from "./playList.vue";
 export default {
   name: "fullScreen",
-  components: { Icon },
+  components: { Icon, PlayList },
   data() {
     return {
       lyricList: [],
+      soundValue: 0,
+      musicCurrentTime: 0,
+      playListStatus: false,
+      totalTime: "",
+      thisAppAudio: {},
     };
   },
   props: {
@@ -78,19 +152,33 @@ export default {
       default: {},
     },
   },
+  created() {
+    this.getLyricData();
+  },
+  mounted() {
+    //保存播放状态
+    this.$store.state.musicPlay.music.playStatus =
+      this.$store.state.musicPlay._refs.AppAudio.paused;
+    //保存当前播放时间
+    this.musicCurrentTime =
+      this.$store.state.musicPlay._refs.AppAudio.currentTime;
+    //保存播放音量
+    this.soundValue = this.$store.state.musicPlay._refs.AppAudio.volume;
+    this.countTotalTime();
+  },
+  updated() {
+    this.countTotalTime()
+    // this.getLyricData()
+  },
   methods: {
-    showPlayList() {
-      var playList = window.localStorage.getItem("playList");
-      console.log("playList", playList);
-    },
     showPlay() {
       this.$emit("showPlay");
     },
+    //修饰歌词
     getLyricData() {
-      // console.log(this.playmusic.id);
       this.lyricList = [];
       this.$axios
-        .get("/lyric?id=" + this.playmusic.id)
+        .get("/lyric?id=" + this.$store.state.musicPlay.music.thisPlay.music.id)
         .then((res) => {
           // console.log("res", res);
           let lyric = res.data.lrc.lyric;
@@ -104,6 +192,7 @@ export default {
           let lyricArray = str.map((item, i) => {
             //判断匹配
             if (reg.test(item)) {
+              // console.log("item",item);
               //分钟数据
               let min = Number(RegExp.$1);
               //秒
@@ -117,34 +206,128 @@ export default {
             }
           });
           this.lyricList = lyricArray;
-          // console.log('newlyricList',this.lyricList);
+          // console.log("newValuelyldValuecList", this.lyricList);
         })
         .catch((err) => {
           console.log(err);
         });
     },
-
-
-    changePlayStatus(){
-      var val = {
-        music:"aaa",
-        index:9
-      }
-      this.$store.dispatch("AddPlayList",val)
+    //拖动进度条
+    changeCurrentTime(musicCurrentTime) {
+      this.musicCurrentTime = musicCurrentTime;
+      this.$store.state.musicPlay._refs.AppAudio.currentTime = musicCurrentTime;
     },
-    playPre() {},
-    playNext() {},
-    changePlayModel() {}
-  },
-  created() {
-    // console.log("playmusic", this.playmusic);
-    this.getLyricData();
+    //修改音量
+    soundVolumeChange(value) {
+      this.soundValue = value;
+      this.$store.state.musicPlay._refs.AppAudio.volume = value;
+    },
+    //true 为暂停 false为播放
+    changePlayStatus(value) {
+      if (value) {
+        // console.log("播放");
+        this.$store.state.musicPlay._refs.AppAudio.play();
+        this.$store.state.musicPlay.music.playStatus = false;
+      } else {
+        // console.log("暂停");
+        this.$store.state.musicPlay._refs.AppAudio.pause();
+        this.$store.state.musicPlay.music.playStatus = true;
+      }
+    },
+    showPlayList() {
+      this.playListStatus = !this.playListStatus;
+    },
+    //计算总时间
+    countTotalTime() {
+      var min = Math.trunc(
+        this.$store.state.musicPlay._refs.AppAudio.duration / 60
+      );
+      var second = Math.trunc(
+        this.$store.state.musicPlay._refs.AppAudio.duration % 60
+      );
+      if (min < 10) {
+        min = "0" + min;
+      }
+      if (second < 10) {
+        second = "0" + second;
+      }
+      this.totalTime = min + ":" + second;
+      console.log("countTotalTime",this.totalTime);
+    },
+    // TODO
+    playPre() {
+      var _thisPlay = this.$store.state.musicPlay.music.thisPlay;
+      var _PlayList = this.$store.state.musicPlay.music.playList;
+      if (_thisPlay.index == 0) {
+        //如果是列表第一首
+        this.$store.state.musicPlay.music.thisPlay = {
+          index: _PlayList.length - 1,
+          music: _PlayList[_PlayList.length - 1],
+        };
+      } else {
+        this.$store.state.musicPlay.music.thisPlay = {
+          index: _thisPlay.index - 1,
+          music: _PlayList[_thisPlay.index - 1],
+        };
+      }
+      // console.log("_thisPlay","_thisPlay");
+      // console.log("_thisPlay",this.$store.state.musicPlay.music.thisPlay);
+      // console.log("_PlayList",_PlayList);
+      // console.log("_PlayList",this.$store.state.musicPlay.music.playList);
+    },
+    playNext() {
+      var _thisPlay = this.$store.state.musicPlay.music.thisPlay;
+      var _PlayList = this.$store.state.musicPlay.music.playList;
+      if (_thisPlay.index == _PlayList.length - 1) {
+        //如果是列表最后一首
+        this.$store.state.musicPlay.music.thisPlay = {
+          index: 0,
+          music: _PlayList[0],
+        };
+      } else {
+        this.$store.state.musicPlay.music.thisPlay = {
+          index: _thisPlay.index + 1,
+          music: _PlayList[_thisPlay.index + 1],
+        };
+      }
+    },
+    changePlayModel() {},
   },
   computed: {
-    // ScreenBoxImage() {
-    //   return {'background-image': 'url(${'+this.playmusic.picUrl+'}?param=200y200)'}
-    // }
+    nowTime() {
+      var min = Math.trunc(
+        this.$store.state.musicPlay._refs.AppAudio.currentTime / 60
+      );
+      var second = Math.trunc(
+        this.$store.state.musicPlay._refs.AppAudio.currentTime % 60
+      );
+      min = "0" + min;
+      if (second < 10) {
+        second = "0" + second;
+      }
+      console.log("min", min);
+      console.log("second", second);
+
+      return min + ":" + second;
+    },
   },
+  // watch: {
+  //   musicCurrentTime(newValue, oldValue) {
+  //     var min = Math.trunc(
+  //       this.$store.state.musicPlay._refs.AppAudio.currentTime / 60
+  //     );
+  //     var second = Math.trunc(
+  //       this.$store.state.musicPlay._refs.AppAudio.currentTime % 60
+  //     );
+  //     min = "0" + min;
+  //     if (second < 10) {
+  //       second = "0" + second;
+  //     }
+  //     console.log("min", min);
+  //     console.log("second", second);
+  //     this.nowTime = min + ":" + second;
+  //   },
+  // },
 };
 </script>
 
@@ -160,17 +343,15 @@ export default {
   background: var(--bgurl);
   background-size: cover;
   background-repeat: no-repeat;
-  z-index: 99;
+  z-index: 50;
   &::before {
-    // background: var(--bgurl);
-    // background-size: cover;
-    // background-repeat: no-repeat;
   }
   .Inner {
     backdrop-filter: blur(40px);
-    background-color: rgba($color: #393939, $alpha: 0.2);
+    background-color: rgba($color: #393939, $alpha: 0.5);
     height: 100%;
     .fullScreenHeader {
+      height: 40px;
       color: #fff;
       display: flex;
       align-items: center;
@@ -180,15 +361,39 @@ export default {
         font-size: 20px;
         margin-left: 2%;
       }
-
-      .songName {
+      .Name {
+        width: 80%;
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        white-space: nowrap;
         word-wrap: break-word;
         word-break: normal;
-        font-size: 16px;
+        left: 40px;
+        .songName {
+          font-size: 16px;
+        }
+        .arName {
+          font-size: 1px;
+        }
       }
 
       .forward {
         margin-right: 2%;
+      }
+    }
+    .soundVolume {
+      display: flex;
+      margin: 0 auto;
+      width: 85%;
+      align-items: center;
+      justify-content: space-between;
+      .icon {
+        display: inline-block;
+      }
+      .slider {
+        width: 90%;
       }
     }
 
@@ -206,8 +411,9 @@ export default {
       }
       .bodyInner {
         width: 100%;
-        height: 80vh;
-        padding: 10px;
+        height: 78vh;
+        padding: 50% 0;
+        box-sizing: border-box;
         overflow: auto;
         text-align: center;
 
@@ -219,9 +425,32 @@ export default {
         }
       }
     }
-
+    .musicBar {
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      .nowTime {
+        display: inline-block;
+        margin-right: 6px;
+        font-size: xx-small;
+      }
+      .timeBar {
+        display: inline-block;
+        width: 75%;
+      }
+      .totalTime {
+        display: inline-block;
+        margin-left: 6px;
+        font-size: xx-small;
+        color: #9a9a9a;
+      }
+    }
     .boxFooter {
-      margin: 2vh 0;
+      position: absolute;
+      width: 100%;
+      bottom: 0;
+      margin: 2vh 0 5px;
       display: flex;
       justify-content: space-around;
       align-items: center;
@@ -238,6 +467,20 @@ export default {
       .lists {
         color: #fff;
       }
+    }
+  }
+  .PlayList {
+    width: 100%;
+    height: 50%;
+    position: absolute;
+    top: 50%;
+    .List {
+      border-radius: 20px;
+      height: 98%;
+      margin: 0 auto;
+      color: #fff;
+      background-color: #232323;
+      width: 90%;
     }
   }
 }

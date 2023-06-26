@@ -1,20 +1,27 @@
 <template>
   <div id="app">
     <nav-view></nav-view>
-    <router-view
-      class="router"
-      :class="playafter()"
-    ></router-view>
+    <router-view class="router" :class="playafter()"></router-view>
     <div class="playbox">
-      <div class="playmusic" v-if="music.playStatus" @click="toggleFullScreen()">
+      <div
+        class="playmusic"
+        v-if="music.playBoxStatus"
+        @click="toggleFullScreen()"
+      >
         <div class="playimg">
-          <img :src="music.thisPlay.music.song.album.picUrl + '?param=200y200'" alt="" />
+          <img
+            :src="music.thisPlay.music.song.album.picUrl + '?param=200y200'"
+            alt=""
+          />
         </div>
         <div class="playboxr">
           <!-- 歌名 -->
           <div class="name">
             <span> {{ music.thisPlay.music.name }} </span>
-            <span class="alias" v-if="music.thisPlay.music.song.alias.length != 0">
+            <span
+              class="alias"
+              v-if="music.thisPlay.music.song.alias.length != 0"
+            >
               ({{
                 music.thisPlay.music.song.alias[0]
                   ? music.thisPlay.music.song.alias[0]
@@ -24,7 +31,9 @@
           </div>
           <audio
             class="audio"
-            v-if="music.playStatus"
+            ref="AppAudio"
+            v-if="music.playBoxStatus"
+            autoplay
             :src="`https://music.163.com/song/media/outer/url?id=${music.thisPlay.music.id}.mp3`"
             controls
           ></audio>
@@ -32,11 +41,12 @@
       </div>
     </div>
     <transition name="fullscreenchange">
-        <full-screen
-          @showPlay="toggleFullScreen"
-          :playmusic="playmusic"
-          v-if="isShowPlay"
+      <full-screen
+        @showPlay="toggleFullScreen"
+        :playmusic="music.thisPlay.music"
+        v-if="isShowPlay"
         ></full-screen>
+        <!-- :AppAudio="AppAudio" -->
     </transition>
   </div>
 </template>
@@ -44,21 +54,30 @@
 <script>
 import FullScreen from "./components/fullScreen.vue";
 import navView from "./components/navView.vue";
-import {mapState,mapGetters} from 'vuex'
+import { mapState } from "vuex";
 export default {
   components: { navView, FullScreen },
   data() {
     return {
-      playstat: false,
-      id: "",
-      playmusic: "",
-      // playId: "",
       isShowPlay: false,
+      AppAudio: {},
     };
   },
-  created() {},
+  mounted() {
+    // this.$watch(
+    //   () => this.$refs.AppAudio,
+    //   val => {
+    //     console.log("this.$refs.AppAudio",this.$refs.AppAudio);
+    //     this.$store.state.musicPlay.music.AppAudio = this.$refs.AppAudio
+    //   }
+    // )
+  },
+  updated() {
+    this.$store.state.musicPlay._refs = this.$refs
+    this.AppAudio = this.$refs.AppAudio
+  },
   computed: {
-    ...mapState(['music']),
+    ...mapState("musicPlay", ["music"]),
     playafter() {
       return (index) => {
         return {
@@ -68,15 +87,26 @@ export default {
     },
   },
   methods: {
-    play(music) {
-      console.log("play",music);
-      // this.playstat = true;
-      // this.playmusic = music;
-      // this.playId = music.id;
-    },
+    // play(music) {
+    //   console.log("play", music);
+    // },
     toggleFullScreen() {
+      this.AppAudio = this.$refs.AppAudio
       this.isShowPlay = !this.isShowPlay;
     },
+  },
+  watch: {
+  //   $refs["AppAudio"]: {
+  //     deep:true,
+  //     handler(newV,oldV) {
+  //       this.$nextTick(() => {
+  //       console.log("this.AppAudio", this.AppAudio);
+  //       console.log("newValue", newV.currentTime);
+  //       console.log("oldValue", oldV.currentTime);
+  //       this.AppAudio.currentTime = newV.currentTime
+  //     });
+  //     }
+  //   }
   },
 };
 </script>
