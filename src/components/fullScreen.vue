@@ -151,7 +151,7 @@
 <script>
 import { Icon } from "vant";
 import PlayList from "./playList.vue";
-import {mapState} from "vuex";
+import { mapState, mapMutations } from "vuex";
 export default {
   name: "fullScreen",
   components: { Icon, PlayList },
@@ -188,6 +188,7 @@ export default {
     // this.countTotalTime();load()
   },
   methods: {
+    // ...mapMutations("musicPlay",{playPre:"PLAYPRE"}),
     showPlay() {
       this.$emit("showPlay");
     },
@@ -254,45 +255,17 @@ export default {
     showPlayList() {
       this.playListStatus = !this.playListStatus;
     },
+    //上一首
     playPre() {
-      var _thisPlay = this.$store.state.musicPlay.music.thisPlay;
-      var _PlayList = this.$store.state.musicPlay.music.playList;
-      if (_thisPlay.index == 0) {
-        //如果是列表第一首
-        this.$store.state.musicPlay.music.thisPlay = {
-          index: _PlayList.length - 1,
-          music: _PlayList[_PlayList.length - 1],
-        };
-      } else {
-        this.$store.state.musicPlay.music.thisPlay = {
-          index: _thisPlay.index - 1,
-          music: _PlayList[_thisPlay.index - 1],
-        };
-      }
-      this.$store.state.musicPlay.music.playStatus = false;
-      this.$store.state.musicPlay._refs.AppAudio.load()
+      this.$store.commit("musicPlay/PLAYPRE");
       this.getLyricData();
     },
+    //下一首
     playNext() {
-      var _thisPlay = this.$store.state.musicPlay.music.thisPlay;
-      var _PlayList = this.$store.state.musicPlay.music.playList;
-      if (_thisPlay.index == _PlayList.length - 1) {
-        //如果是列表最后一首
-        this.$store.state.musicPlay.music.thisPlay = {
-          index: 0,
-          music: _PlayList[0],
-        };
-      } else {
-        this.$store.state.musicPlay.music.thisPlay = {
-          index: _thisPlay.index + 1,
-          music: _PlayList[_thisPlay.index + 1],
-        };
-      }
-      this.$store.state.musicPlay.music.playStatus = false;
-      this.$store.state.musicPlay._refs.AppAudio.load()
+      this.$store.commit("musicPlay/PLAYNEXT");
       this.getLyricData();
     },
-    // TODO
+    //改变播放模式
     changePlayModel() {
       if (this.$store.state.musicPlay.music.model == 3) {
         this.$store.state.musicPlay.music.model = 1;
@@ -300,6 +273,7 @@ export default {
         this.$store.state.musicPlay.music.model++;
       }
     },
+    // TODO
   },
   computed: {
     ...mapState("musicPlay", ["music"]),
