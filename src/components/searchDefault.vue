@@ -14,7 +14,7 @@
           <i class="history-icon"></i>
           <div class="history-r">
             <span class="first" @click="clickSearch(item)">{{ item }}</span>
-            <span class="close" @click.stop="deleteHistoey(item)">X</span>
+            <span class="close" @click.stop="deleteHistoey(item)"><van-icon size="16px" name="close" /></span>
           </div>
         </li>
       </div>
@@ -159,14 +159,7 @@ export default {
             -webkit-box-flex: 1;
           }
           .close {
-            display: block;
             margin-right: 6px;
-            text-align: center;
-            line-height: 20px;
-            width: 20px;
-            height: 20px;
-            border: #666 solid 1px;
-            border-radius: 10px;
           }
         }
       }

@@ -1,12 +1,24 @@
 <template>
   <div id="app">
     <nav-view></nav-view>
-    <router-view class="router" :class="playafter()"></router-view>
+    <router-view
+      class="router"
+      :class="playafter()"
+      @toMusicDetail="musicDetailShow"
+    ></router-view>
+    <!-- TODO 歌单 -->
+    <transition name="fullscreenchange">
+      <play-list-detail
+        v-if="detailStatus"
+        @toDetailStatus="detailStatus = false"
+        :detailID="detailID"
+      ></play-list-detail>
+    </transition>
     <div class="playbox">
       <div
         class="playmusic"
-        v-if="music.playBoxStatus"
-        @click="toggleFullScreen()"
+        v-if="music.playList.length != 0"
+        @click="toggleFullScreen"
       >
         <div class="playimg">
           <img
@@ -16,13 +28,19 @@
         </div>
         <div class="playboxr">
           <!-- 歌名 -->
-          <div class="name">
+          <div
+            class="name"
+            :class="
+              Array.from(`${music.thisPlay.music.name}`).length >= 25
+                ? 'textAnima'
+                : ''
+            "
+          >
             <span> {{ music.thisPlay.music.name }} </span>
             <span
               class="alias"
               v-if="music.thisPlay.music.song.alias.length != 0"
-            >
-              ({{
+              >({{
                 music.thisPlay.music.song.alias[0]
                   ? music.thisPlay.music.song.alias[0]
                   : music.thisPlay.music.song.alia[0]
@@ -48,7 +66,7 @@
         @showPlay="toggleFullScreen"
         :playmusic="music.thisPlay.music"
         ref="fullscreenInAPP"
-        v-if="isShowPlay"
+        v-if="music.FullScreenShow && music.playList.length != 0"
       ></full-screen>
     </transition>
   </div>
@@ -57,12 +75,15 @@
 <script>
 import FullScreen from "./components/fullScreen.vue";
 import navView from "./components/navView.vue";
+import PlayListDetail from "./components/playListDetail.vue";
 import { mapState } from "vuex";
 export default {
-  components: { navView, FullScreen },
+  components: { navView, FullScreen, PlayListDetail },
   data() {
     return {
       isShowPlay: false,
+      detailStatus: false,
+      detailID: 0,
     };
   },
   mounted() {},
@@ -72,12 +93,17 @@ export default {
     playafter() {
       return (index) => {
         return {
-          "play-after": this.playstat === true,
+          "play-after": this.music.playBoxStatus === true,
         };
       };
     },
   },
   methods: {
+    //显示歌单
+    musicDetailShow(item) {
+      this.detailID = item.id;
+      this.detailStatus = true;
+    },
     //播放器组件加载完成后触发
     canplaysong() {
       this.$store.state.musicPlay._refs = this.$refs;
@@ -106,18 +132,24 @@ export default {
       this.$store.state.musicPlay.music.playTime = min + ":" + second;
       this.$store.state.musicPlay.music.playTimeBySecond =
         this.$refs.AppAudio.currentTime;
+      if (this.$store.state.musicPlay.music.FullScreenShow) {
+        this.$refs.fullscreenInAPP.lyricRoll();
+      }
     },
+    //显示
     toggleFullScreen() {
-      this.isShowPlay = !this.isShowPlay;
+      this.$store.state.musicPlay.music.FullScreenShow =
+        !this.$store.state.musicPlay.music.FullScreenShow;
     },
-    // TODO
     endToPlayNextMusic() {
       if (this.$store.state.musicPlay.music.model == 3) {
         this.$store.state.musicPlay._refs.AppAudio.load();
       } else {
         this.$store.commit("musicPlay/PLAYNEXT");
       }
-      this.$refs.fullscreenInAPP.getLyricData();
+      if (this.$store.state.musicPlay.music.FullScreenShow) {
+        this.$refs.fullscreenInAPP.getLyricData();
+      }
     },
   },
 };
@@ -131,7 +163,7 @@ export default {
     margin-top: 40px;
   }
   .play-after {
-    margin-bottom: 82px;
+    margin-bottom: 101px;
   }
   /* 进入动画的第一帧 */
   .fullscreenchange-enter,
@@ -150,7 +182,10 @@ export default {
   .fullscreenchange-leave {
     transform: translateY(0);
   }
+
   .playbox {
+    z-index: 100;
+
     background-color: rgba(241, 243, 244, $alpha: 1);
     position: fixed;
     bottom: 0;
@@ -166,6 +201,7 @@ export default {
       white-space: nowrap;
       word-break: normal;
       align-items: center;
+      height: 101px;
       .playimg {
         margin: 0 auto;
         img {
@@ -173,6 +209,7 @@ export default {
           border: 1px solid rgb(241, 243, 244);
           width: 70px;
           height: 70px;
+          // z-index: ;
         }
       }
     }
@@ -187,10 +224,10 @@ export default {
       flex-direction: column;
       .name {
         display: flex;
-        overflow: hidden;
-        text-overflow: ellipsis;
         margin-top: 5px;
         justify-content: center;
+        animation: playboxr 10s linear infinite;
+        flex-direction: column;
         .alias {
           overflow: hidden;
           text-overflow: ellipsis;
@@ -198,8 +235,20 @@ export default {
           margin-left: 4px;
         }
       }
+
+      .textAnima {
+        animation: songName 10s linear infinite;
+      }
+      @keyframes songName {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(calc(-100%));
+        }
+      }
       .audio {
-        z-index: 1;
+        z-index: 100;
         margin: 0 auto;
       }
     }

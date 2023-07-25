@@ -2,7 +2,7 @@
   <div class="recommend">
     <title-border>编辑推荐</title-border>
     <div class="recommend-lists">
-      <div class="recommend-list" v-for="item in recommendList" :key="item.id">
+      <div class="recommend-list" v-for="item in recommendList" @click="$emit('toMusicDetail',item)" :key="item.id">
         <imgitem :item="item"></imgitem>
         <div class="name">{{ item.name }}</div>
       </div>
@@ -35,6 +35,13 @@ export default {
   },
 
   methods: {
+    // play(music) {
+    //   // console.log('play(music)',music);
+    //   this.$store.commit("ADDPLAYLIST",music)
+    // },
+    toMusicDetails(value){
+      console.log(value);
+    },
     getRecommendList() {
       // 请求 推荐歌单
       this.$axios

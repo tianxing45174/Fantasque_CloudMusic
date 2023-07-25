@@ -33,7 +33,9 @@ export default {
 			RandomPlayValue: {
 				index: 0,
 				value: []
-			}
+			},
+			//歌曲详情显示 false为不显示 true为显示
+			FullScreenShow: false
 		},
 		_refs: {}
 	},
@@ -65,29 +67,26 @@ export default {
 			var toPlayValue = 1
 			var _thisPlay = state.music.thisPlay;
 			var _PlayList = state.music.playList;
-			console.log("PLAYNEXT.toPlayValue.length", state.music.RandomPlayValue.value.length);
-			console.log("PLAYNEXT.index", state.music.RandomPlayValue.index);
 			//随机播放
 			if (state.music.model == 2) {
 				do {
-					toPlayValue = Math.floor(Math.random() * (_PlayList.length - _thisPlay.index));
-				} while (toPlayValue == 0)
-				state.music.RandomPlayValue.index--
-				if (state.music.RandomPlayValue.index != 0 && state.music.RandomPlayValue.index != state.music.RandomPlayValue.value.length) {
-					console.log(state.music.RandomPlayValue.value);
-					toPlayValue = state.music.RandomPlayValue.value[state.music.RandomPlayValue.index]
-				}
-				if (_thisPlay.index == 0) {
-					toPlayValue = 1
+					if (_thisPlay.index == 0) {
+						// console.log("_thisPlay.index == 0");
+						break;
+					}
+					var toPlayValue = Math.floor(Math.random() * (_thisPlay.index));
+				} while (toPlayValue == 0 && _thisPlay.index !=0 )
+				if (state.music.RandomPlayValue.index > 0) {
+					toPlayValue = state.music.RandomPlayValue.value[state.music.RandomPlayValue.index - 1]
+					state.music.RandomPlayValue.index--
+				} else {
+					state.music.RandomPlayValue = {
+						index: 0,
+						value: []
+					}
+					// toPlayValue = 1
 				}
 			}
-
-			console.log("toPlayValue", toPlayValue);
-			// console.log("PLAYNEXT.toPlayValue",_PlayList.length - _thisPlay.index);
-			// console.log("PLAYNEXT.toPlayValue",state.music.RandomPlayValue.index != state.music.RandomPlayValue.value.length);
-			console.log("PLAYNEXT.toPlayValue", state.music.RandomPlayValue.value.length);
-			console.log("PLAYNEXT.index", state.music.RandomPlayValue.index);
-
 			if (_thisPlay.index == 0) {
 				//如果是列表第一首
 				state.music.thisPlay = {
@@ -100,6 +99,10 @@ export default {
 					music: _PlayList[_thisPlay.index - toPlayValue],
 				};
 			}
+			// console.log("state.music.RandomPlayValue.index >= 0",state.music.RandomPlayValue.index >= 0);
+			// console.log("state.music.RandomPlayValue.index",state.music.RandomPlayValue.value);
+			// console.log("toPlayValue",toPlayValue);
+			// console.log("state.music.thisPlay",state.music.thisPlay.index);
 			state.music.playStatus = false;
 			state._refs.AppAudio.load()
 		},
@@ -111,26 +114,29 @@ export default {
 
 			//随机播放
 			if (state.music.model == 2) {
-				do {
-					toPlayValue = Math.floor(Math.random() * (_PlayList.length - _thisPlay.index));
-				} while (toPlayValue == 0)
+				if (_thisPlay.index != _PlayList.length - 1) {
+					do {
+						if (_PlayList.length - _thisPlay.index == 0) {
+							// console.log("_PlayList.length - _thisPlay.index");
+							break;
+						}
+						toPlayValue = Math.floor(Math.random() * (_PlayList.length - _thisPlay.index));
+					} while (toPlayValue == 0)
+				}
+				// 循环历史下标不为0 和 下标和历史记录下标不同 时为TRUE
 				if (state.music.RandomPlayValue.index != 0 && state.music.RandomPlayValue.index != state.music.RandomPlayValue.value.length) {
 					toPlayValue = state.music.RandomPlayValue.value[state.music.RandomPlayValue.index - 1]
-					console.log("toPlayValue = state.music.RandomPlayValue.value[state.music.RandomPlayValue.index-1]");
 				} else {
-					console.log("state.music.RandomPlayValue.value.push(toPlayValue)");
 					state.music.RandomPlayValue.value.push(toPlayValue)
 				}
 				state.music.RandomPlayValue.index++
-				
+			} else {
+				state.music.RandomPlayValue = {
+					index: 0,
+					value: []
+				}
 			}
-			// console.log("PLAYNEXT",state.music.RandomPlayValue);
-
-			console.log("toPlayValue", toPlayValue);
-			// console.log("PLAYNEXT.toPlayValue",_PlayList.length - _thisPlay.index);
-			// console.log("PLAYNEXT.toPlayValue",state.music.RandomPlayValue.index != state.music.RandomPlayValue.value.length);
-			console.log("PLAYNEXT.toPlayValue", state.music.RandomPlayValue.value);
-			console.log("PLAYNEXT.index", state.music.RandomPlayValue.index);
+			
 			if (_thisPlay.index == _PlayList.length - 1) {
 				//如果是列表最后一首
 				state.music.thisPlay = {
@@ -144,9 +150,44 @@ export default {
 				};
 			}
 			// console.log(state.music.thisPlay);
+			// console.log("state.music.RandomPlayValue.index",state.music.RandomPlayValue.value);
+			// console.log("toPlayValue",toPlayValue);
+			// console.log("state.music.thisPlay",state.music.thisPlay.index);
 			state.music.playStatus = false;
 			state._refs.AppAudio.load();
 		},
+		//删除歌单
+		DELETEPLAYMUSIC(state, index) {
+			// console.log(index);
+			// console.log(state.music.playList);
+			if (index == "ALL" || state.music.playList.length == 1) {
+				state.music.playBoxStatus = false
+				state.music.FullScreenShow = false
+				state.music.playList = []
+				state.music.thisPlay = {
+					//在列表中的位置
+					index: 0,
+					//音乐
+					music: {}
+				}
+				state.music.RandomPlayValue = {
+					index: 0,
+					value: []
+				}
+			}
+			if (index == state.music.thisPlay.index) {
+				this.commit("musicPlay/PLAYNEXT")
+				state.music.thisPlay.index = index
+			}
+			state.music.playList.splice(index, 1)
+		},
+		//切换播放
+		CHANGEPLAYMUSIC(state, index) {
+			state.music.thisPlay = {
+				index,
+				music: state.music.playList[index]
+			}
+		}
 	},
 	//准备getters——用于将state中的数据进行加工 //类计算属性
 	// getters: {

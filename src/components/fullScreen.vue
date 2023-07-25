@@ -1,18 +1,36 @@
 <template>
   <div
     class="fullScreenBox"
-    :style="{ '--bgurl': `url(${playmusic.song.album.picUrl}?param=200y200)` }"
+    :style="{ '--bgurl': `url(${playmusic.song.album.picUrl}?param=200y200)`}"
     @click="playListStatus = false"
-  >
+    >
     <div class="Inner">
       <div class="fullScreenHeader">
-        <!-- <div class="x" @click="showPlay">x</div> -->
-        <van-icon class="x" name="arrow-down" @click.stop="showPlay" />
+        <van-icon
+          class="x"
+          name="arrow-down"
+          @click.stop="music.FullScreenShow = 0"
+        />
         <div class="Name">
-          <div class="songName">{{ playmusic.name }}</div>
+          <div
+            class="songName"
+            :class="
+              Array.from(`${playmusic.name}` + `${playmusic.name}`).length >= 34
+                ? 'textAnima'
+                : ''
+            "
+          >
+            {{ playmusic.name }}
+          </div>
           <div class="arName">
-            <span v-for="(item, index) in playmusic.ar" :key="index">
+            <span
+              v-for="(item, index) in music.thisPlay.music.song.artists"
+              :key="index"
+            >
               {{ item.name }}
+              <span v-if="index < music.thisPlay.music.song.artists.length - 1"
+                >/</span
+              >
             </span>
           </div>
         </div>
@@ -52,19 +70,44 @@
           inactive-color="#999"
         />
       </div>
-      <div class="boxBody">
-        <ul class="bodyInner">
+      <div class="boxBody" @click="changeLyricOrRecord">
+        <ul class="bodyInner" v-show="lyricOrRecord" ref="lyricBox">
           <div ref="loading" class="loading" v-if="lyricList.length == 0">
             加载中
           </div>
           <li
-            :class="index % 2 == 0 ? 'inactive' : 'active'"
+            class="lyricText"
+            :class="
+              music.playTimeBySecond > item.time &&
+              music.playTimeBySecond < item.nextTime
+                ? 'active'
+                : 'inactive'
+            "
+            :ref="
+              music.playTimeBySecond > item.time &&
+              music.playTimeBySecond < item.nextTime
+                ? 'lyricroll'
+                : ''
+            "
             v-for="(item, index) in lyricList"
             :key="index"
           >
-            {{ item.lyric }}
+            {{ item.lyric == "" ? "————    间奏    ————" : item.lyric }}
           </li>
         </ul>
+        <div
+          class="record recordAnima"
+          :class="music.playStatus ? 'recordAnimaStop' : 'recordAnimaStart'"
+          v-show="!lyricOrRecord"
+        >
+          <div class="song-tur"></div>
+          <div
+            class="img"
+            :style="{
+              '--bgurl': `url(${playmusic.song.album.picUrl}?param=200y200)`,
+            }"
+          ></div>
+        </div>
       </div>
       <div class="musicBar">
         <span class="nowTime">
@@ -73,7 +116,7 @@
         <span class="timeBar">
           <van-slider
             v-model="music.playTimeBySecond"
-            :max="$store.state.musicPlay.music.playTotalTimeBySecond"
+            :max="music.playTotalTimeBySecond"
             button-size="6px"
             step="0.01"
             @change="changeCurrentTime"
@@ -141,8 +184,8 @@
       </div>
     </div>
     <transition name="PlayListAnima">
-      <div @click.stop="" class="PlayList" v-show="playListStatus">
-        <play-list class="List"></play-list>
+      <div class="PlayList" v-show="playListStatus">
+        <play-list @click.stop="" class="List"></play-list>
       </div>
     </transition>
   </div>
@@ -163,6 +206,9 @@ export default {
       playListStatus: false,
       totalTime: "",
       thisAppAudio: {},
+      lyricOrRecord: false,
+      ScreenValue: 0,
+      updatePlayBox: false,
     };
   },
   props: {
@@ -184,16 +230,28 @@ export default {
     //保存播放音量
     this.soundValue = this.$store.state.musicPlay._refs.AppAudio.volume;
   },
-  beforeUpdate() {
-    // this.countTotalTime();load()
-  },
+  beforeUpdate() {},
   methods: {
+    lyricRoll() {
+      if (this.ScreenValue != this.$refs.lyricroll[0].offsetTop - 315) {
+        this.ScreenValue = this.$refs.lyricroll[0].offsetTop - 315;
+        this.$refs.lyricBox.scrollTo({
+          top: this.ScreenValue,
+          behavior: "smooth",
+        });
+      }
+    },
+    //显示歌词或唱片
+    changeLyricOrRecord() {
+      this.lyricOrRecord = !this.lyricOrRecord;
+    },
     // ...mapMutations("musicPlay",{playPre:"PLAYPRE"}),
     showPlay() {
       this.$emit("showPlay");
     },
     //修饰歌词
     getLyricData() {
+      this.updatePlayBox = false
       this.lyricList = [];
       this.$axios
         .get("/lyric?id=" + this.$store.state.musicPlay.music.thisPlay.music.id)
@@ -223,8 +281,24 @@ export default {
               };
             }
           });
+          lyricArray = lyricArray.map(({ time, lyric }, i) => {
+            var nextTime;
+            if (i == lyricArray.length - 1) {
+              nextTime =
+                this.$store.state.musicPlay.music.playTotalTimeBySecond;
+            } else {
+              nextTime = lyricArray[i + 1].time;
+            }
+            //判断匹配
+            return {
+              nextTime,
+              time,
+              lyric,
+            };
+          });
+          // console.log(lyricArray);
           this.lyricList = lyricArray;
-          // console.log("newValuelyldValuecList", this.lyricList);
+          this.updatePlayBox = true
         })
         .catch((err) => {
           console.log(err);
@@ -273,7 +347,7 @@ export default {
         this.$store.state.musicPlay.music.model++;
       }
     },
-    // TODO
+    // TODO 歌词滚动
   },
   computed: {
     ...mapState("musicPlay", ["music"]),
@@ -293,7 +367,7 @@ export default {
   background: var(--bgurl);
   background-size: cover;
   background-repeat: no-repeat;
-  z-index: 50;
+  z-index: 101;
   /* 进入动画的第一帧 */
   .PlayListAnima-enter,
   .PlayListAnima-leave-to {
@@ -315,7 +389,7 @@ export default {
   }
   .Inner {
     backdrop-filter: blur(40px);
-    background-color: rgba($color: #393939, $alpha: 0.5);
+    background-color: rgba($color: #393939, $alpha: 0.6);
     height: 100%;
     .fullScreenHeader {
       height: 40px;
@@ -339,7 +413,19 @@ export default {
         word-break: normal;
         left: 40px;
         .songName {
+          display: inline-block;
           font-size: 16px;
+        }
+        .textAnima {
+          animation: songName 10s linear infinite;
+        }
+        @keyframes songName {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(calc(-100%));
+          }
         }
         .arName {
           font-size: 1px;
@@ -367,13 +453,48 @@ export default {
     .boxBody {
       display: flex;
       justify-content: center;
-
-      ul {
-        .active {
-          color: #fff;
+      .recordAnima {
+        animation: recordAnima 10s infinite linear;
+        transform-origin: center center;
+      }
+      @keyframes recordAnima {
+        0% {
+          transform: rotate(0deg);
         }
-        .inactive {
-          color: #999;
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .recordAnimaStart {
+        animation-play-state: running;
+      }
+      .recordAnimaStop {
+        animation-play-state: paused;
+      }
+      .record {
+        height: 520.412px;
+        width: 100%;
+        position: relative;
+        .song-tur {
+          position: absolute;
+          width: 247px;
+          height: 247px;
+          margin: 136px 0 0 64px;
+          z-index: 2;
+          background-image: url(https://s3.music.126.net/mobile-new/img/disc.png?d3bdd1080a72129346aa0b4b4964b75f=);
+          background-size: contain;
+        }
+        .img {
+          position: absolute;
+          z-index: 1;
+          margin: 168px 0 0 95px;
+          width: 184px;
+          height: 184px;
+          border: #000 solid 2px;
+          border-radius: 50%;
+          background: var(--bgurl);
+          background-size: contain;
+          background-repeat: no-repeat;
         }
       }
       .bodyInner {
@@ -383,7 +504,15 @@ export default {
         box-sizing: border-box;
         overflow: auto;
         text-align: center;
-
+        .lyricText {
+          margin: 20px 0;
+        }
+        .active {
+          color: #fff;
+        }
+        .inactive {
+          color: #999;
+        }
         .loading {
           text-align: center;
           color: #fff;
@@ -440,14 +569,11 @@ export default {
     width: 100%;
     height: 100%;
     position: absolute;
-    top: 35%;
+    top: 0;
     .List {
-      border-radius: 20px;
-      height: 98%;
-      margin: 0 auto;
-      color: #fff;
-      background-color: #232323;
-      width: 90%;
+      position: absolute;
+      bottom: 0;
+      width: 100%;
     }
   }
 }

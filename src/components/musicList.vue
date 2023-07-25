@@ -69,10 +69,6 @@ export default {
 
   methods: {
     ...mapMutations('musicPlay',{play:'ADDPLAYLIST',}),
-    // play(music) {
-    //   // console.log('play(music)',music);
-    //   this.$store.commit("ADDPLAYLIST",music)
-    // },
   },
 };
 </script>

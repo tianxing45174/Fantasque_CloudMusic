@@ -1,6 +1,6 @@
 <template>
   <div class="imgItem">
-    <img :src="item.picUrl + '?param=200y200'" alt="" />
+    <img :src="item.picUrl + '?param=200y200'" alt=""/>
     <div class="playCount">{{ item.playCount | playCountFormater }}</div>
   </div>
 </template>
@@ -25,7 +25,8 @@ export default {
     },
   },
 
-  methods: {},
+  methods: {
+  },
 };
 </script>
 

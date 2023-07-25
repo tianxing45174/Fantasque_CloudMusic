@@ -93,44 +93,7 @@ export default {
         }, delay);
       }
 
-      // if (this.limit < this.hotSongsList.length) {
-      //     let relative = 100 // 相对距离
-      //     // 防反跳
-      //     clearTimeout(this.timer)
-      //     if (this.timer === null) {
-      //         //时间间隔外立即执行
-      //         if (this.getScrollTop() + this.getWindowHeight() >= this.getScrollHeight() - relative) {
-      //         // console.log('Refresh');
-      //         this.limit += 20
-      //         // console.log(this.limit);
-      //     }
-      //         this.timer = 0
-      //         return
-      //     }
-      //     this.timer = setTimeout(() => {
-      //         if (this.getScrollTop() + this.getWindowHeight() >= this.getScrollHeight() - relative) {
-      //         // console.log('Refresh');
-      //         this.limit += 20
-      //         // console.log(this.limit);
-      //     }
-      //         //初始化timer 作为计时清除依据
-      //         this.timer = null
-      //     }, delay);
-
-      // }
     },
-    // //滚动条在Y轴上的滚动距离
-    // getScrollTop() {
-    //     return document.body.scrollTop + document.documentElement.scrollTop
-    // },
-    // //文档的总高度
-    // getScrollHeight() {
-    //     return document.documentElement.scrollHeight
-    // },
-    // //浏览器视口的高度
-    // getWindowHeight() {
-    //     return document.compatMode == "CSS1Compat" ? document.documentElement.clientHeight : document.body.clientHeight
-    // }
     getHotListDetail() {
       //获取热歌榜id
       this.$axios
